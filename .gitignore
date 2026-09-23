@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Translation working directories
+# The pipeline writes these next to whatever workdir the user names; never commit them.
+workdir/
+*.workdir/
+structure.json
+linkmap.json
+body.html
+body-raw.html
+doc.html
+
+# Intermediate PDFs — one per pipeline round, large and fully reproducible
+*-r[0-9].pdf
+_raw.pdf
+*.tmp.pdf
+
+# Node (KaTeX is installed into the workdir on first run)
+node_modules/
+package-lock.json
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
