@@ -7,7 +7,9 @@
 公式重排、图片归位、表格重建、脚注可跳转 —— 不是把 PDF 转成文本再翻译，而是**重建一份中文版面**
 
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-d97757)](https://claude.com/claude-code)
+[![Codex](https://img.shields.io/badge/Codex-Skill-000000)](https://openai.com/codex)
 [![DSH](https://img.shields.io/badge/DSH-Skill-1f4e79)](https://github.com/deepseek-ai)
+[![Pi](https://img.shields.io/badge/Pi-Skill-6b4fbb)](https://github.com/badlogic/pi)
 [![License](https://img.shields.io/badge/License-MIT-2ea44f)](LICENSE)
 
 [English](README.en.md) · 中文
@@ -16,17 +18,17 @@
 
 ---
 
-## 这是什么
+## 能做什么
 
-一个 **agent skill**：把它装进 Claude Code 或 DSH，然后说一句「翻译这篇 PDF」，它就会产出一份**中文排版稿**。
+这是一个 **Agent Skill**。它不绑定任何特定的 agent 平台 —— 只要你的 agent 能读到 `SKILL.md`、能跑 Python 和 Chrome，就能用它。安装好后输入一句「翻译这篇 PDF」，它就会自动生成一份经过重新排版的**中文文献稿**。
 
-它解决的是一件很具体的事：**现成的工具链都把公式毁了**。
+已验证可用：**Claude Code**、**Codex**、**DSH**、**Pi**（安装路径见[安装](#安装)）。Cursor、Cline、Gemini CLI 等任何读 `SKILL.md` 的 agent 同样适用。
 
-把 PDF 转成 Markdown 再翻译，公式只有两条路可走 —— 要么拍平成 Unicode（丢掉分数线、根号、上下标位置），要么裁成图片（不能缩放、基线和中文对不齐，一眼看上去就是贴上去的）。两条路都把一个**已经排好的公式**给毁了。
+我调研了社区中现有的 PDF 翻译方案，目前，大多数 PDF 翻译方案主要采用两类思路：一种是先解析并提取 PDF 中的文本内容，完成翻译后再根据原始信息重新生成文档；另一种则是在尽可能保留原始 PDF 结构的基础上进行翻译，例如 BabelDOC 所采用的方案。无论采用哪种方式，核心挑战都并不在于翻译本身——借助大语言模型已经能够实现较高质量的文本翻译，真正困难的是**如何准确理解 PDF 中复杂的文档结构，并在翻译后实现高质量的排版重构**。
 
-这个 skill 走第三条路：**用 KaTeX 把公式重新排一遍**。输出的是真正的矢量字形（`KaTeX_Math-Italic`、`KaTeX_Size2-Regular` 这些字体子集），能缩放、能对齐、能打印。
+在实际应用中，PDF 中的公式、图片、表格、超链接、脚注以及复杂的版面布局都给解析与重排带来了挑战。因此，现有方案仍可能出现公式渲染异常、图表位置偏移、排版效果不佳、链接跳转失效以及脚注显示异常等问题。这些问题也是我在翻译和阅读学术文献过程中长期遇到的痛点，我相信也困扰着许多科研人员和技术学习者。
 
-社区里目前没有同类开源方案，而文献翻译是很多人的日常刚需 —— 所以把它放出来。
+本 Agent Skill 致力于解决这些 PDF 翻译中的排版问题，其中一个核心设计是使用 **KaTeX 对数学公式进行重新排版**。生成的公式采用真正的矢量字体渲染（如 `KaTeX_Math-Italic`、`KaTeX_Size2-Regular` 等字体子集），因此具备良好的缩放能力、对齐效果和打印质量。目前，社区中尚未发现采用类似方案的开源 PDF 翻译工具。
 
 ---
 
@@ -142,14 +144,15 @@
 
 | 依赖 | 说明 |
 |---|---|
-| **宿主 agent** | [Claude Code](https://claude.com/claude-code) 或 [DSH](https://github.com/deepseek-ai)。翻译由 agent 的模型完成 |
+| **宿主 agent** | 任何支持 Agent Skill 的平台 —— Claude Code、Codex、DSH、Pi 等。**翻译由 agent 自己的模型完成，skill 不需要 API key** |
 | **Python 3.9+** | 需要 `pymupdf`：`pip install pymupdf` |
+| **Node.js + npm** | 首次运行时在临时目录装一份 KaTeX（之后离线可用） |
 | **Chrome 或 Edge** | 用来打印 PDF。装在标准路径即可，否则设 `CHROME_PATH` 环境变量 |
 | **中文字体** | 正文 `STSong` / `SimSun`，标题 `Microsoft YaHei`（Windows 自带；macOS/Linux 见下方 FAQ） |
 
 ### 装 skill
 
-把仓库放进 agent 的 skill 目录：
+把仓库放进 agent 的 skill 目录。各平台的路径不同，选你用的那个：
 
 ```bash
 git clone https://github.com/DFBlowing/pdf-translation.git
@@ -157,9 +160,18 @@ git clone https://github.com/DFBlowing/pdf-translation.git
 # Claude Code
 cp -r pdf-translation ~/.claude/skills/
 
+# Codex
+cp -r pdf-translation ~/.codex/skills/
+
 # DSH
 cp -r pdf-translation ~/.dsh/skills/
+
+# Pi
+cp -r pdf-translation ~/.pi/agent/skills/
 ```
+
+用别的 agent 就把 `pdf-translation` 整个目录放到它的 skill 目录下 —— skill 本身没有任何平台相关的代码。
+（也可以用软链接代替复制，方便以后 `git pull` 更新。）
 
 然后在会话里说「翻译这篇 PDF」即可触发；也可以直接 `/pdf-translation`。
 
@@ -169,16 +181,17 @@ cp -r pdf-translation ~/.dsh/skills/
 
 ### 它会先问你三个问题
 
-**在动手之前**，它会先量一遍你的文档，把成本摆出来让你选：
+1. **在动手之前**，它会先量一遍你的文档，询问你是选择只翻译出 Markdown 还是翻译为排版好的 PDF：
 
-> 这份 PDF 共 **14 页 / 9,932 个英文词 / 72 个编号公式**（公式密集）。
->
-> - **只出 Markdown**：约 **15–25 分钟**，**2 万–4 万 token**（跳过排版与迭代）
-> - **出排版好的 PDF**：约 **60–100 分钟**，**4 万–7 万 token**
->
-> 要哪一种？要 PDF 的话，正文和图片分别要单栏还是双栏？
+skill 中有个脚本会根据页数、英文词数、编号公式数估算 token 和时间（仅供参考，并不准确）。
 
-预估不是拍脑袋：脚本会实测页数、英文词数、编号公式数，再套用**在真实论文上标定过的系数**（汉字数 ≈ 英文词数 × 0.94，参考案例预测 9,336 字 vs 实际 9,329 字）。
+2. 如果你选择翻译 PDF，它会询问你是**正文**是选择单栏排版还是双栏排版？
+
+3. 如果你选择翻译 PDF，它会询问你是**图表**是使用单栏排版还是双栏排版。
+
+问题 2 和问题 3 决定了 CSS 架构、图片标记方式和公式越界判据，事后返工要重跑整个流程。
+
+如果原文是双栏期刊（IEEE / ACM / Elsevier），skill 会去读 `references/two-column-paper.md` —— 里面有实测的栏几何、逐段分栏架构、越界判据及其两个已经踩过的坑、图片与表格的跨栏规则。
 
 ### 使用条件
 
@@ -194,12 +207,6 @@ cp -r pdf-translation ~/.dsh/skills/
 - 公式本身是**图片**的文档（老论文扫描版常见）
 - 图文混排的杂志、手写体、竖排文字
 
-### 单栏还是双栏？
-
-这是**必须问**的，不是默认项。它决定 CSS 架构、图片标记方式和公式越界判据，事后返工要重跑整个流程。
-
-如果原文是双栏期刊（IEEE / ACM / Elsevier），skill 会去读 `references/two-column-paper.md` —— 里面有实测的栏几何、逐段分栏架构、越界判据及其两个已经踩过的坑、图片与表格的跨栏规则。
-
 ---
 
 ## 常见问题
@@ -208,7 +215,7 @@ cp -r pdf-translation ~/.dsh/skills/
 
 **这个 skill 本身不需要任何 key。**
 
-翻译是**宿主 agent 用它自己的模型**做的 —— key 配在 agent 里，不在 skill 里。你只要保证 Claude Code 或 DSH 能正常对话，就能用它。
+翻译是**宿主 agent 用它自己的模型**做的 —— key 配在 agent 里，不在 skill 里。你只要保证你的 agent 能正常对话，就能用它。skill 里没有任何 API key 配置项，也没有需要你填的密钥字段。
 
 需要配置的只有几个**可选项**：
 
@@ -222,7 +229,7 @@ export PDF_TRANSLATION_SANS="PingFang SC"         # 标题
 ```
 
 ### macOS / Linux 上的中文字体
-
+（未经测试，我使用的是 Windows 系统。）
 默认字体名是 Windows 的 `STSong` / `SimSun`（正文）和 `Microsoft YaHei`（标题）。其他平台用上面两个环境变量覆盖即可，**不需要改代码**：
 
 | 平台 | `PDF_TRANSLATION_SERIF` | `PDF_TRANSLATION_SANS` |

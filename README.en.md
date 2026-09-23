@@ -7,7 +7,9 @@
 Formulas re-set, figures in place, tables rebuilt, footnotes clickable — not a text dump with a translation on top, but a **rebuilt Chinese layout**
 
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-d97757)](https://claude.com/claude-code)
+[![Codex](https://img.shields.io/badge/Codex-Skill-000000)](https://openai.com/codex)
 [![DSH](https://img.shields.io/badge/DSH-Skill-1f4e79)](https://github.com/deepseek-ai)
+[![Pi](https://img.shields.io/badge/Pi-Skill-6b4fbb)](https://github.com/badlogic/pi)
 [![License](https://img.shields.io/badge/License-MIT-2ea44f)](LICENSE)
 
 English · [中文](README.md)
@@ -18,8 +20,13 @@ English · [中文](README.md)
 
 ## What this is
 
-An **agent skill**. Install it into Claude Code or DSH, say "translate this PDF", and it
+An **agent skill**. It is not tied to any one agent platform — if your agent can read
+`SKILL.md` and run Python and Chrome, it can use this. Say "translate this PDF" and it
 produces a **typeset Chinese version**.
+
+Verified on **Claude Code**, **Codex**, **DSH**, and **Pi** (install paths under
+[Install](#install)). Cursor, Cline, Gemini CLI, and anything else that reads `SKILL.md`
+work the same way.
 
 It solves one specific problem: **every existing toolchain destroys the math.**
 
@@ -166,12 +173,16 @@ LaTeX is the right tool when you are writing a math-dense document from scratch;
 
 | Dependency | Notes |
 |---|---|
-| **A host agent** | [Claude Code](https://claude.com/claude-code) or [DSH](https://github.com/deepseek-ai). The agent's model does the translating |
+| **A host agent** | any platform that supports agent skills — Claude Code, Codex, DSH, Pi, … **The agent's own model does the translating; the skill needs no API key** |
 | **Python 3.9+** | needs `pymupdf`: `pip install pymupdf` |
+| **Node.js + npm** | installs a local copy of KaTeX on first run (offline afterwards) |
 | **Chrome or Edge** | prints the PDF. A standard install is found automatically; otherwise set `CHROME_PATH` |
 | **CJK fonts** | body `STSong` / `SimSun`, headings `Microsoft YaHei` (bundled with Windows; see the FAQ for macOS/Linux) |
 
 ### Install the skill
+
+Drop the repository into your agent's skill directory. The path differs per platform —
+use whichever one you run:
 
 ```bash
 git clone https://github.com/DFBlowing/pdf-translation.git
@@ -179,9 +190,19 @@ git clone https://github.com/DFBlowing/pdf-translation.git
 # Claude Code
 cp -r pdf-translation ~/.claude/skills/
 
+# Codex
+cp -r pdf-translation ~/.codex/skills/
+
 # DSH
 cp -r pdf-translation ~/.dsh/skills/
+
+# Pi
+cp -r pdf-translation ~/.pi/agent/skills/
 ```
+
+For any other agent, put the whole `pdf-translation` directory in its skill directory —
+there is no platform-specific code in the skill.
+(Symlinking instead of copying also works, and makes `git pull` updates trivial.)
 
 Then say "translate this PDF" in a session, or invoke `/pdf-translation` directly.
 
@@ -236,7 +257,8 @@ the overflow criterion and its two shipped bugs, and the figure/table span rules
 **This skill needs no key of its own.**
 
 Translation is done by the **host agent using its own model** — the key lives in the agent, not
-in the skill. If Claude Code or DSH can hold a conversation, it can use this.
+in the skill. If your agent can hold a conversation, it can use this. There is no key field
+to fill in anywhere in the skill.
 
 Only a few **optional** environment variables exist:
 
