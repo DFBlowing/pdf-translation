@@ -1,0 +1,13 @@
+# Normalize line endings — this repo is meant to be cloned on Windows, macOS and Linux.
+* text=auto eol=lf
+
+# Windows-only files keep CRLF if any are ever added
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary
+*.png binary
+*.jpg binary
+*.pdf binary
+*.ttc binary
+*.ttf binary
