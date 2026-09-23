@@ -290,6 +290,33 @@ pdf-translation/
 
 ---
 
+## 翻译案例
+
+两个**排版效果演示**（原文 + 中文译文对照），用来直观说明这个 skill 能做出什么样的版面：
+
+| 案例 | 规模 | 重点 |
+|---|---|---|
+| **Disco 论文**（IEEE 双栏） | 14 页 → 译文 18 页 · 73 个公式 | 公式全部 KaTeX 重排、越栏判据、`[n]` 双向跳转 |
+| **Stanford CS231n 讲义** | 191 页 → 译文 158 页 · 80 图 | 13 个并行批次（实测约 29 分钟）、代码原样保留 |
+
+文件较大（合计约 36 MB），所以**不放进仓库**，挂在 Release 上：
+
+**[⬇ 下载两个案例](https://github.com/DFBlowing/pdf-translation/releases/tag/cases-v1)** · 细节见 [`docs/cases/`](docs/cases/README.md)
+
+> CS231n 那份源文件本身有缺陷：代码框用了 `overflow: hidden`，**146 行代码在原文里就被截断了**，缺失字符在 PDF 里不存在。译文照原样保留并逐处标注（58 条，覆盖 146 行）。
+
+---
+
+## 版权声明
+
+本仓库**只包含工具代码，不包含任何论文原文或译文**。
+
+案例目录（Release 附件）中的 **原文**著作权归原作者及出版方所有（Disco 论文 © IEEE；CS231n 讲义 © Stanford Vision Lab）；**译文**由本工具自动生成，仅供学习、研究与技术演示，不得商用。本仓库不主张对它们的任何权利，也不从中获利。
+
+**如果这些文件侵犯了您的权利，请提交 [Issue](https://github.com/DFBlowing/pdf-translation/issues) 或邮件至 zzdf176@gmail.com，我会在第一时间删除，非常抱歉。**
+
+---
+
 ## License
 
 [MIT](LICENSE)

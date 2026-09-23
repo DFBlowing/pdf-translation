@@ -344,6 +344,41 @@ pdf-translation/
 
 ---
 
+## Translation cases
+
+Two **layout demonstrations** — an English original paired with its Chinese translation — so you can see
+what this skill actually produces:
+
+| Case | Size | What it shows |
+|---|---|---|
+| **Disco paper** (IEEE, two-column) | 14 pages → 18-page translation · 73 equations | Every formula re-typeset with KaTeX; the column-overflow criterion; two-way `[n]` links |
+| **Stanford CS231n notes** | 191 pages → 158-page translation · 80 figures | 13 parallel batches (~29 min measured); code preserved verbatim |
+
+They are large (~36 MB total), so they are **not committed here** — they live on a release:
+
+**[⬇ Download both cases](https://github.com/DFBlowing/pdf-translation/releases/tag/cases-v1)** · details in [`docs/cases/`](docs/cases/README.md)
+
+> The CS231n source has a defect of its own: its code boxes use `overflow: hidden`, so **146 lines of code
+> are clipped in the original** and the missing characters are not in the PDF. The translation keeps those
+> lines as-is and marks each one (58 notes covering 146 lines).
+
+---
+
+## Copyright
+
+This repository contains **tool code only — no paper originals and no translations.**
+
+In the case archives (release assets), the **originals** remain the property of their authors and
+publishers (Disco paper © IEEE; CS231n notes © Stanford Vision Lab). The **translations** were generated
+automatically and are for study, research and technical demonstration only. This repository claims no
+rights over them and derives no revenue from them.
+
+**If any of these files infringes your rights, please open an
+[Issue](https://github.com/DFBlowing/pdf-translation/issues) or email zzdf176@gmail.com and I will remove
+them immediately — my sincere apologies.**
+
+---
+
 ## License
 
 [MIT](LICENSE)
