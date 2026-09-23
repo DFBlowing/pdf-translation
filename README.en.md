@@ -212,18 +212,25 @@ Then say "translate this PDF" in a session, or invoke `/pdf-translation` directl
 
 ### It asks you three questions first
 
-**Before doing any work**, it measures your document and puts the price in front of you:
+**Before doing any work**, it measures your document and puts the price in front of you. The
+coefficients come from **two measured reference runs**, not from guesswork:
 
-> This PDF is **14 pages / 9,932 English words / 72 numbered equations** (formula-heavy).
->
-> - **Markdown only**: about **15–25 minutes**, **20k–40k tokens** (skips typesetting)
-> - **Typeset PDF**: about **60–100 minutes**, **40k–70k tokens**
->
-> Which one? If PDF, should the body and figures be single- or two-column?
+| Reference run | Size | Measured output tokens | Measured wall clock |
+|---|---|---|---|
+| IEEE TWC 2026 (formula-heavy) | 14 pages / 9,652 words / 72 equations | 42k – 62k | 11 – 18 min |
+| **Stanford CS231n notes** (prose + code) | **191 pages / 50,529 words / 80 figures** | **222k** (measured) | **~29 min** (measured) |
 
-The estimate is measured, not guessed: the script counts pages, English words and numbered
-equations, then applies coefficients **calibrated on a real paper** (CJK chars ≈ English words
-× 0.94; predicted 9,336 characters against 9,329 actual).
+**The thing that is easy to miss: the cost driver is turns × context size, not translation
+length.** In the CS231n run the bulk of the total was **cache reads** — thirteen parallel
+subagents each re-reading their own context. So doubling the page count costs far more than
+double the tokens; and splitting a document into parallel batches cuts wall-clock time sharply
+while leaving total tokens roughly unchanged. That 29 minutes is the parallel path; a single
+serial agent is noticeably slower (`estimate.py` reports both figures).
+
+> For the record: the first version of `estimate.py` had this wrong. Its per-page time was
+> back-derived from a reference run's **whole** duration, which included nine rounds of user
+> feedback. Extrapolating from "duration including rework" produced the absurd "191 pages =
+> 6–11 hours". Clean first pass and per-round rework are now costed separately.
 
 ### When it works
 
