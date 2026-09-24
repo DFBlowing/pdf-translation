@@ -257,6 +257,11 @@ class Doc:
 def main():
     apply = "--apply" in sys.argv
     review = "--review" in sys.argv
+    for label, p in (("--body", BODY), ("--links", LINKS)):
+        if not os.path.exists(p):
+            sys.exit(f"{label}: no such file: {p}\n"
+                     f"usage: python restore-links.py --body <body.html> --links <source-links.json> "
+                     f"[--review|--apply|--diag]")
     src = json.load(open(LINKS, encoding="utf-8"))
     src.sort(key=lambda x: (x["page"], x["rect"][1], x["rect"][0]))
     src_uris = [x["uri"] for x in src]
