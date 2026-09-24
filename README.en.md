@@ -143,20 +143,48 @@ their own page.
 
 ## How it works
 
-Six stages. Three of them are scripts, two are the model's own work, one is a gate.
+Six stages. `scripts/` holds the mechanical ones as runnable programs; translate and the
+judgement calls inside verify are the model's own work.
 
 ```
-0. ask        → ASK first: Markdown only, or a typeset PDF? quote the token & time estimate
+0. ask        → ASK first: Markdown only, or a typeset PDF? which column layout? quote the estimate
 1. probe      → does this PDF have a text layer? which pages need OCR?
-2. extract    → per-page text blocks + bbox + font/size, figures cropped at 300 dpi
+1.5 truncation→ did the SOURCE lose text to a clipped code box? measure it before translating
+2. extract    → per-page text blocks + bbox + font/size + colour, figures cropped at 300 dpi
 3. classify   → which spans are math, which blocks are headings / code / captions
-4. translate  → the model writes the Chinese into a structured body file
-5. verify     → fidelity.py: no dropped sentences, no summarised captions
-6. typeset    → HTML + KaTeX → headless Chrome → PDF, then stamp header/footer
+4. translate  → the model writes the Chinese into a structured body file.
+                Inventory the source's links FIRST and put that inventory in every batch brief
+                (extract-source-links.py), then splice them back (restore-links.py)
+5. verify     → four gates, in this order, each one a hard stop:
+                  fidelity.py        no dropped sentences, no summarised captions
+                  coverage-check.py  no source run left untranslated
+                  links-audit.py     every source annotation accounted for
+                  check-markup.py    the <a> splices did not corrupt the HTML
+6. typeset    → HTML + KaTeX → headless Chrome → PDF, stamp header/footer, then
+                add-internal-links.py writes the TOC jumps into the PDF
 ```
 
 Choose "Markdown only" and it stops after stage 5 — the whole typesetting path is skipped, at
 roughly **a quarter of the cost**.
+
+### Links and navigation are content
+
+This one shipped broken once. The source carried **251** link annotations and the first delivery
+kept 67. Nothing was unfindable — **splitting the work split the context**: the first 30 pages were
+hand-written with their links inline, while five parallel subagents wrote the rest from a brief
+that never mentioned links, so not one `<a href>` came out of them. **A fact you forget to put in
+the brief is a fact the fragment will not have.**
+
+What was done: the three site URLs repeated on every chapter's last page (`github.com/cs231n`,
+`twitter`, `mailto:`, 66 annotations) were dropped — a translation is not a website — and
+everything else was matched back into the prose. About **27% could not be placed at all**: their
+visible text had been translated with no Latin trace left (`in the documentation.` → 「在文档中」).
+Those are **reported, never guessed** — a wrong link is worse than a missing one.
+
+> Quote the ledger, not the URL count: **251 annotations** (the file holds 253 URI annotations,
+> 2 of them exact duplicates of another) = 66 site chrome + 52 already present + 66 restored +
+> 67 unplaceable. "How many distinct URLs appear" is a different and flattering number: a URI
+> counts as present the moment it appears once, so three citations of one paper collapse into one.
 
 ### Why HTML + CSS rather than LaTeX
 
@@ -218,7 +246,7 @@ coefficients come from **two measured reference runs**, not from guesswork:
 | Reference run | Size | Measured output tokens | Measured wall clock |
 |---|---|---|---|
 | IEEE TWC 2026 (formula-heavy) | 14 pages / 9,652 words / 72 equations | 42k – 62k | 11 – 18 min |
-| **Stanford CS231n notes** (prose + code) | **191 pages / 50,529 words / 80 figures** | **222k** (measured) | **~29 min** (measured) |
+| **Stanford CS231n notes** (prose + code) | **191 pages / 50,529 words / 82 figures** | **222k** (measured) | **~29 min** (measured) |
 
 **The thing that is easy to miss: the cost driver is turns × context size, not translation
 length.** In the CS231n run the bulk of the total was **cache reads** — thirteen parallel
@@ -321,9 +349,16 @@ pdf-translation/
 ├── scripts/
 │   ├── estimate.py                 stage 0 — token and wall-clock estimate
 │   ├── probe.py                    stage 1 — page/block/font-size report
+│   ├── detect-truncation.py        stage 1.5 — find code the SOURCE lost to clipping
 │   ├── extract.py                  stage 2 — structure.json + figures at 300 dpi
-│   ├── classify.py                 stage 3 — math spans + heading levels
+│   ├── classify.py                 stage 3 — math spans + heading levels (size AND colour)
+│   ├── extract-source-links.py     stage 4 — pull the source's link annotations + anchor text
+│   ├── restore-links.py            stage 4 — put the source's content links back into the body
 │   ├── fidelity.py                 stage 5 — dropped / untranslated / caption gate
+│   ├── coverage-check.py           stage 5 — source-to-output coverage (dropped pages)
+│   ├── links-audit.py              stage 5 — link coverage: source annotations vs output
+│   ├── check-markup.py             stage 5 — markup integrity after splicing <a> into prose
+│   ├── add-internal-links.py       stage 6 — add TOC jump links to the rendered PDF
 │   ├── typeset.py                  stage 6 — HTML + KaTeX + Chrome → PDF
 │   └── compare.py                  measure any two PDFs against each other
 └── docs/images/                    screenshots used by the README
@@ -341,6 +376,14 @@ pdf-translation/
   re-typeset solves it properly.
 - **Footnotes cannot sit at the page foot** (see the FAQ).
 - **Headers and footers are stamped by the script**, not reproduced from the source.
+- **About a quarter of the links cannot be placed.** Where the visible text was fully translated
+  with no Latin trace left (`here.`, `in the documentation.` → 「在文档中」), string matching cannot
+  find it and ordinal matching would shift every link by one. These are **reported, never
+  guessed** — a wrong link is worse than a missing one.
+- **Truncation in the source can only be healed from upstream.** Characters clipped out of a code
+  box by `overflow: hidden` are not in the PDF's content stream and no extractor can reach them.
+  Where no upstream revision exists, reconstruct conservatively and **keep the fragment** rather
+  than inventing an ending.
 
 ---
 
@@ -352,15 +395,19 @@ what this skill actually produces:
 | Case | Size | What it shows |
 |---|---|---|
 | **Disco paper** (IEEE, two-column) | 14 pages → 18-page translation · 73 equations | Every formula re-typeset with KaTeX; the column-overflow criterion; two-way `[n]` links |
-| **Stanford CS231n notes** | 191 pages → 158-page translation · 80 figures | 13 parallel batches (~29 min measured); code preserved verbatim |
+| **Stanford CS231n notes** | 191 pages → 155-page translation · 82 figures · 133 links | 13 parallel batches (~29 min measured); code preserved verbatim; clipped code healed from upstream |
 
-They are large (~36 MB total), so they are **not committed here** — they live on a release:
+They are large (~35 MB total), so they are **not committed here** — they live on a release:
 
 **[⬇ Download both cases](https://github.com/DFBlowing/pdf-translation/releases/tag/cases-v1)** · details in [`docs/cases/`](docs/cases/README.md)
 
-> The CS231n source has a defect of its own: its code boxes use `overflow: hidden`, so **146 lines of code
-> are clipped in the original** and the missing characters are not in the PDF. The translation keeps those
-> lines as-is and marks each one (58 notes covering 146 lines).
+> The CS231n source has a defect of its own: its code boxes use `overflow: hidden`, and the
+> detector reports **73 lines of code clipped in the original**, across 42 pages — the missing
+> characters are not in the PDF and no extractor can recover them. The translation heals them from
+> the official upstream notes instead: of 72 candidates, 65 are provably healed (the output contains
+> characters the source does not hold) and the rest are detector false positives, each read by hand
+> — healed too. **No "text missing in the original" note survives anywhere in the delivered
+> document.**
 
 ---
 

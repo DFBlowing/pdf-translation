@@ -120,6 +120,48 @@ def main():
                 print(f'    bold font: {f}  ({n} chars)')
     print()
 
+    # ---- heading candidates: SIZE ALONE IS NOT ENOUGH ----
+    # Size-only levelling silently promotes list items and TOC entries to headings.
+    # The CS231n lecture PDF is the cautionary case: `Assignments` / `Module 0` are
+    # 19.2pt in Stanford red (#8c1515) and ARE headings, while `Assignment #1: ...`
+    # is 14.4pt in near-black (#333333) and is a plain LIST ITEM -- and the first
+    # run promoted all three to <h1>, producing giant headings with one character
+    # per span and letterspacing stretched by justify.
+    #
+    # Colour separates them cleanly, alongside these companion signals:
+    #   * a heading is SHORT and standalone (it owns its line/block);
+    #   * a list item repeats with a shared prefix (`Assignment #1/#2/#3`) and sits
+    #     in a run of siblings at the same size+colour;
+    #   * a repeated identical string at a large size is a running HEADER (drop it).
+    print("=== heading candidates (size + colour + context) ===")
+    cands = {}
+    for p in pages:
+        for b in p["blocks"]:
+            if b["type"] != "text":
+                continue
+            for s in b["spans"]:
+                sz = round(s["size"], 1)
+                if sz <= body + 0.4 or len(s["t"].strip()) < 2:
+                    continue
+                key = (sz, s.get("color"))
+                cands.setdefault(key, {"n": 0, "ex": [], "chars": 0})
+                cands[key]["n"] += 1
+                cands[key]["chars"] += len(s["t"])
+                if len(cands[key]["ex"]) < 3:
+                    cands[key]["ex"].append((p["page"], s["t"][:58]))
+    for (sz, col), d in sorted(cands.items(), key=lambda kv: -kv[0][0]):
+        c = f"#{col:06x}" if col is not None else "?"
+        print(f"\n  size={sz:5.1f}  color={c}   {d['n']:4d} spans, {d['chars']:6d} chars")
+        for pg, t in d["ex"]:
+            print(f"      p{pg:<4} {t!r}")
+    print()
+    print("  Decide per (size, colour) group -- do NOT infer levels from size order:")
+    print("    * a colour used ONLY for short standalone lines  -> heading")
+    print("    * a grey/muted colour repeating every page       -> running header, DROP")
+    print("    * a size that also carries long prose            -> NOT a heading level")
+    print("    * siblings sharing a prefix (#1/#2/#3, a/b/c)    -> <ul> items, not headings")
+    print()
+
     # ---- math ----
     print("=== MATH: formula runs (read structure off the geometry) ===")
     total_math = 0

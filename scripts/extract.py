@@ -101,6 +101,7 @@ def main():
             if b["type"] == 0:
                 spans = [{"t": s["text"], "size": round(s["size"], 1),
                           "font": s["font"],
+                          "color": s.get("color"),
                           "bbox": [round(v, 1) for v in s["bbox"]]}
                          for l in b.get("lines", []) for s in l["spans"]
                          if s["text"].strip()]

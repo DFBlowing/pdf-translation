@@ -100,8 +100,7 @@ def render_css():
     The CSS uses `var(--serif)` / `var(--sans)` everywhere, so each stack has
     exactly one definition; the concrete families arrive here.
     """
-    serif, sans = font_stacks()
-    return CSS.replace("__SERIF__", serif).replace("__SANS__", sans)
+    return CSS
 
 
 def ensure_katex(workdir):
@@ -124,7 +123,7 @@ def ensure_katex(workdir):
             "node_modules/katex/dist/contrib/auto-render.min.js")
 
 
-CSS = r"""
+_CSS_TEMPLATE = r"""
 :root{
   --ink:#1a2028; --ink-soft:#3d4653; --ink-mute:#78838f;
   --rule:#e2e7ee; --brand:#1f4e79; --brand-lite:#eaf1f8;
@@ -173,7 +172,17 @@ h2.mod{ font-family:var(--sans); font-size:13pt; font-weight:700;
 h3.sec{ font-family:var(--sans); font-size:11pt; font-weight:700;
         color:var(--ink); margin:5.5mm 0 1.6mm;
         break-inside:avoid; break-after:avoid; }
-h3.sec .en{ font-weight:400; font-size:9.5pt; color:var(--ink-mute); margin-left:1.5mm; }
+/* The English subtitle of a heading. This must cover every heading level: the
+   rule used to name h3.sec alone, so on a document whose chapter and section
+   headings carry <span class="en"> the Chinese and English ran together with no
+   separator ("卷积神经网络用于视觉识别Convolutional Neural Networks"). The
+   document still rendered, which is exactly why it went unnoticed. */
+h1.chap .en, h2.mod .en, h3.sec .en{
+        display:inline-block; font-weight:400; color:var(--ink-mute);
+        margin-left:2mm; }
+h1.chap .en{ font-size:11pt; }
+h2.mod .en{ font-size:9.5pt; }
+h3.sec .en{ font-size:9.5pt; margin-left:1.5mm; }
 p{ margin:0 0 2.6mm; }
 b,strong{ font-family:var(--sans); font-weight:700; color:var(--brand); }
 code{ font-family:Consolas,monospace; font-size:.92em; background:var(--brand-lite);
@@ -237,6 +246,17 @@ tbody tr{ break-inside:avoid; }
 .endnote{ margin-top:6mm; padding-top:3mm; border-top:1px solid var(--rule);
           font-size:9pt; color:var(--ink-mute); text-align:center; }
 """
+
+# Render the template ONCE at import time, so `typeset.CSS` is always a usable
+# stylesheet. Making it a template with live placeholders was a trap: any caller
+# that used `T.CSS` directly -- and render-full.py did -- shipped `var(--serif)`
+# bound to the literal string `__SERIF__`, the CSS fell back to a browser default,
+# and the PDF came out with Type3 glyphs instead of STSong. Nothing downstream
+# looked wrong: page count, CJK count and overflow were all still fine. So the
+# rendered string is now the public constant and there is no way to get it wrong.
+CSS = (_CSS_TEMPLATE
+       .replace("__SERIF__", font_stacks()[0])
+       .replace("__SANS__", font_stacks()[1]))
 
 
 def build_html(workdir, title):
